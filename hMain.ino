@@ -45,6 +45,8 @@ uint8_t maxChanges = 24;                                      // Value for blend
 ezButton button1(2);
 ezButton button2(6);
 ezButton button3(5);
+ezButton button4(7);
+ezButton button5(8);
 
 // Color palettes
 CRGBPalette16 currentPalette = OceanColors_p;
@@ -55,6 +57,8 @@ void setup() {
   button1.setDebounceTime(50);
   button2.setDebounceTime(50);
   button3.setDebounceTime(50);
+  button4.setDebounceTime(50);
+  button5.setDebounceTime(50);
   Serial.begin(9600);
   delay(3000);
   LEDS.addLeds<LED_TYPE, LED_DT, GRB>(leds, NUM_LEDS);
@@ -71,17 +75,31 @@ void getMode() {
     button1.loop();
     button2.loop();
     button3.loop();
+    button4.loop();
+    button5.loop();
 
     if (button1.isPressed()) {
+        Serial.println(F("0"));
         crMode = 0;
       }
 
     if (button2.isPressed()) {
+        Serial.println(F("1"));  
         crMode = 1;
       }
 
     if (button3.isPressed()) {
+        Serial.println(F("2"));
         crMode = 2;
+      }
+    if (button4.isPressed()) {
+        Serial.println(F("3"));
+        crMode = 3;
+      }
+
+    if (button5.isPressed()) {
+        Serial.println(F("4"));
+        crMode = 4;
       }
      switch (crMode) {
         case 0:
@@ -113,6 +131,7 @@ void getMode() {
           
     }
   }
+
 
 void sound_ripple() {
   getSample();
