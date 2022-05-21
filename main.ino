@@ -321,6 +321,7 @@ void getSample() {
   micIn -= micLev;                                            // Let's center it to 0 now.
   micIn = abs(micIn);                                         // And get the absolute value of each sample.
   sample = (micIn <= squelch) ? 0 : (sample + micIn) / 2;     // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
+  sample = sample * 3 / 2;                                //Amplify input to light up more leds (more sensitive and inaccurate :(
   sampleAvg = ((sampleAvg * 31) + sample) / 32;               // Smooth it out over the last 32 samples.
 
   if (sample > (sampleAvg+maxVol) && millis() > (peakTime + 50)) {    // Poor man's beat detection by seeing if sample > Average + some value.
