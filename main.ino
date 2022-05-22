@@ -1,7 +1,7 @@
 #include <FastLED.h>
 #include "Button.h"
 
-#define LED_DT 4
+#define LED_DT 13
 #define LED_TYPE WS2812B
 #define NUM_LEDS 300
 #define MIC_PIN 3
@@ -128,20 +128,20 @@ CRGBPalette16 firePalette = HeatColors_p;
 CRGBPalette16 currentPalette;
 TBlendType currentBlending = NOBLEND;
 
-Button buttonM1(2);
-Button buttonM2(3);
-Button buttonM3(A5); // 4 is reserved for Strip
+Button buttonM1(2); //Strobe
+Button buttonM2(3); //Rainbow
+Button buttonM3(4); // 0 is reserved for Strip
 Button buttonM4(5);
-Button buttonM5(6);
+Button buttonM5(6); //Sound_ripple;
 Button buttonM6(7);
 Button buttonM7(8);
 Button buttonM8(9);
 Button buttonC9(10);
 Button buttonC10(11);
 Button buttonC11(12);
-Button buttonC12(13);
-Button buttonC13(A0);
-Button buttonC14(A1);
+Button buttonC12(14);
+Button buttonC13(18); //A4
+Button buttonC14(19); //A5
 
 #define dbTime 50
 
@@ -164,6 +164,7 @@ void setup() {
   LEDS.addLeds<LED_TYPE, LED_DT, GRB>(leds, NUM_LEDS);
   FastLED.setBrightness(MAX_BRIGHTNESS);
   FastLED.setMaxPowerInVoltsAndMilliamps(5, 8000);
+  //cylon();
 }
 
 void loop() {
@@ -174,6 +175,37 @@ void loop() {
   FastLED.show();
 }
 
+void fadeall() { for(int i = 0; i < NUM_LEDS; i++) { leds[i].nscale8(250); } }
+void cylon(){
+    static uint8_t hue = 0;
+  Serial.print("x");
+  // First slide the led in one direction
+  for(int i = 0; i < NUM_LEDS; i++) {
+    // Set the i'th led to red 
+    leds[i] = CHSV(hue++, 255, 255);
+    // Show the leds
+    FastLED.show(); 
+    // now that we've shown the leds, reset the i'th led to black
+    // leds[i] = CRGB::Black;
+    fadeall();
+    // Wait a little bit before we loop around and do it again
+    delay(10);
+  }
+
+  // Now go in the other direction.  
+  for(int i = (NUM_LEDS)-1; i >= 0; i--) {
+    // Set the i'th led to red 
+    leds[i] = CHSV(hue++, 255, 255);
+    // Show the leds
+    FastLED.show();
+    // now that we've shown the leds, reset the i'th led to black
+    // leds[i] = CRGB::Black;
+    fadeall();
+    // Wait a little bit before we loop around and do it again
+    delay(10);
+  }
+  
+  }
 void setBrightness() {
   uint8_t oldVal;
   uint8_t bright = map(analogRead(A1), 0, 1023, 0, MAX_BRIGHTNESS);
@@ -280,28 +312,28 @@ void getMode() {
       }
      switch (crMode) {
         case 0:
-          sound_ripple();
-          break;
-        case 1:
-          sound_wave();
-          break;
-        case 2:
-          sound_noise();
-          break;
-        case 3:
-          sound_pal(); //sound_pal;
-          break;
-        case 4:
-          sound_dots(); //sound_dots
-          break;
-        case 5:                       //Non-Sound-Reactive
           strobe();
           break;
+        case 1:
+          rainbow();
+          break;
+        case 2:
+          fire();
+          break;
+        case 3:
+          confetti(); //sound_pal;
+          break;
+        case 4:
+          sound_ripple(); //sound_dots
+          break;
+        case 5:                       //Non-Sound-Reactive
+          sound_noise();
+          break;
         case 6:
-          sound_ripple();
+          sound_pal();
           break;
         case 7:
-          strobeR();
+          sound_wave();
           break;
         default:
           break;
@@ -321,7 +353,7 @@ void getSample() {
   micIn -= micLev;                                            // Let's center it to 0 now.
   micIn = abs(micIn);                                         // And get the absolute value of each sample.
   sample = (micIn <= squelch) ? 0 : (sample + micIn) / 2;     // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
-  sample = sample * 3 / 2;                                //Amplify input to light up more leds (more sensitive and inaccurate :(
+  sample = sample * 3.3 / 2;                                //Amplify input to light up more leds (more sensitive and inaccurate :(
   sampleAvg = ((sampleAvg * 31) + sample) / 32;               // Smooth it out over the last 32 samples.
 
   if (sample > (sampleAvg+maxVol) && millis() > (peakTime + 50)) {    // Poor man's beat detection by seeing if sample > Average + some value.
@@ -510,3 +542,31 @@ void strobe() {
           fill_solid(leds, NUM_LEDS, CRGB::White);
         }
   }
+
+void rainbow() {
+    uint8_t deltaHue= 10;
+    uint8_t thisHue = beat8(spSmooth, 50);
+    fill_rainbow(leds, NUM_LEDS, thisHue, deltaHue);
+  }
+
+void fire() {
+    EVERY_N_MILLISECONDS(5) {
+      int  a = millis();
+  
+    for (int i = 0; i < NUM_LEDS; i++) {
+      uint8_t noise = inoise8 (0 , i * 60 + a , a / 3);
+      uint8_t math = abs8(i - (NUM_LEDS-1)) * 255 / (NUM_LEDS-1);
+      uint8_t index = qsub8 (noise, math);
+      leds[i] = ColorFromPalette (currentPalette, index, 255);    
+    }  
+  }
+}
+
+void confetti() 
+{
+  uint8_t gHue = 0;
+  // random colored speckles that blink in and fade smoothly
+  fadeToBlackBy( leds, NUM_LEDS, 10);
+  int pos = random16(NUM_LEDS);
+  leds[pos] += CHSV( gHue + random8(64), 200, 255);
+}
