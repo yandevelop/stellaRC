@@ -166,7 +166,7 @@ void setup() {
   buttonC10.begin();
   buttonC11.begin();
   buttonC12.begin();
-  buttonC13.begin();
+  //buttonC13.begin();
   //buttonC14.begin();
   delay(3000);
   LEDS.addLeds<LED_TYPE, LED_DT, GRB>(leds, NUM_LEDS);
@@ -267,10 +267,10 @@ void getColor() {
     if (buttonC12.pressed()) {
         whichPalette = 3;
       }
-    if (buttonC13.pressed()) {
+  /*  if (buttonC13.pressed()) {
         whichPalette = 4;
       }
-    /*if (buttonC14.pressed()) {
+    if (buttonC14.pressed()) {
         whichPalette = 5;
       }*/
 }
@@ -334,7 +334,7 @@ void getMode() {
 
 // Audio Processing
 
-void getSample(int mode) {
+void getSample() {
   int16_t micIn;                                              // Current sample starts with negative values and large values, which is why it's 16 bit signed.
   static long peakTime;
   
@@ -343,9 +343,6 @@ void getSample(int mode) {
   micIn -= micLev;                                            // Let's center it to 0 now.
   micIn = abs(micIn);                                         // And get the absolute value of each sample.
   sample = (micIn <= squelch) ? 0 : (sample + micIn) / 2;     // Using a ternary operator, the resultant sample is either 0 or it's a bit smoothed out with the last sample.
-  if (mode = 1) {
-      sample = sample * 3 / 2;
-    }
   sampleAvg = ((sampleAvg * 31) + sample) / 32;               // Smooth it out over the last 32 samples.
 
   if (sample > (sampleAvg+maxVol) && millis() > (peakTime + 50)) {    // Poor man's beat detection by seeing if sample > Average + some value.
@@ -364,7 +361,7 @@ void agcAvg() {                                                   // A simple av
 
 // Modes
 void sound_ripple() {
-  getSample(1);
+  getSample();
   EVERY_N_MILLISECONDS(20) {
      ripple();
    }
@@ -381,7 +378,7 @@ void sound_wave() {
     uint8_t timeval = beatsin8(10,20,50);                     // Use a sinewave for the line below. Could also use peak/beat detection.
     thistimer.setPeriod(timeval);                             // Allows you to change how often this routine runs.
     fadeToBlackBy(leds, NUM_LEDS, 16);                        // 1 = slow, 255 = fast fade. Depending on the faderate, the LED's further away will fade out.
-    getSample(0);
+    getSample();
     agcAvg();
     sndwave();
   }
@@ -397,7 +394,7 @@ void sound_noise() {
     fillnoise8();                                             // Update the LED array with noise based on sound input
     fadeToBlackBy(leds, NUM_LEDS, 32);                         // 8 bit, 1 = slow, 255 = fast
   }
-  getSample(0);
+  getSample();
 }
 
 void sound_pal() {
@@ -412,7 +409,7 @@ void sound_pal() {
   }
   
   EVERY_N_MILLISECONDS(20) {                           // FastLED based non-blocking delay to update/display the sequence.
-    getSample(0);
+    getSample();
     agcAvg();
     propPal();
   }
@@ -424,7 +421,7 @@ void sound_dots() {
     fadeToBlackBy(leds, 1, 32);
   }
   
-  getSample(0);                                                // Sample the microphone.
+  getSample();                                                // Sample the microphone.
   agcAvg();                                                   // Calculate the adjusted value as sampleAvg.
   ledShow();
 }
@@ -526,12 +523,8 @@ void strobe() {
   }
 
 void rainbow() {
-  uint8_t thisSpeed;
-  EVERY_N_MILLISECONDS(500) {
-      spSmooth = thisSpeed;
-    }
     uint8_t deltaHue= 10;
-    uint8_t thisHue = beat8(thisSpeed, 50);
+    uint8_t thisHue = beat8(spSmooth, 50);
     fill_rainbow(leds, NUM_LEDS, thisHue, deltaHue);
   }
 
@@ -554,15 +547,5 @@ void confetti()
   // random colored speckles that blink in and fade smoothly
   fadeToBlackBy( leds, NUM_LEDS, 10);
   int pos = random16(NUM_LEDS);
-//leds[pos] += CHSV( gHue + random8(64), 200, 255);
-  leds[pos] += CHSV(ColorFromPalette(currentPalette, smoothVal) , 200, 255);
-//leds[pos] += ColorFromPalette(currentPalette, gHue);
-//leds[pos] += ColorFrompalette(currentPalette, gHue+random8(64), smoothVal);
+  leds[pos] += CHSV( gHue + random8(64), 200, 255);
 }
-
-//Glitter ??
-void addGlitter(fract8 chanceOfGlitter) {
-    if ( random8() < chanceOfGlitter) {
-        leds [random16(NUM_LEDS)] += ColorFromPalette(currentPalette, smoothVal);
-      }
-  }
