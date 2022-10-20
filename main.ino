@@ -18,7 +18,7 @@ struct CRGB leds[NUM_LEDS];
 
 //getSample Variables
 float micLev = 0;
-uint8_t maxVol = 12;
+uint8_t maxVol = 11;
 uint8_t squelch = 7;
 
 int sample;
@@ -36,6 +36,8 @@ uint8_t crMode; //MODE SWITCH
 //Speed
 uint8_t spSmooth;
 
+uint8_t rainbowSpeed;
+uint8_t strobe1;
 #define MAX_BRIGHTNESS 128
 
 // Color palettes
@@ -131,13 +133,14 @@ CRGBPalette16 sunset = Sunset_Real_gp;
 CRGBPalette16 pink = bhw1_06_gp;
 CRGBPalette16 mars = OS_WAT_Mars_gp;
 CRGBPalette16 firePalette = HeatColors_p;
+CRGBPalette16 rainbowC = RainbowStripeColors_p;
 
 CRGBPalette16 currentPalette;
-TBlendType currentBlending = NOBLEND;
+TBlendType currentBlending = LINEARBLEND;
 uint8_t whichPalette = 0;
 
-Button buttonM1(0); //Strobe
-Button buttonM2(1); //Rainbow
+Button buttonM1(1); //Strobe
+Button buttonM2(18); //Rainbow
 Button buttonM3(2); // 0 is reserved for Strip
 Button buttonM4(3);
 Button buttonM5(5); //Sound_ripple;
@@ -149,7 +152,7 @@ Button buttonC10(10);
 Button buttonC11(11);
 Button buttonC12(12);
 Button buttonC13(13); 
-//Button buttonC14(19);
+Button buttonC14(19);
 
 #define dbTime 50
 
@@ -167,12 +170,12 @@ void setup() {
   buttonC11.begin();
   buttonC12.begin();
   buttonC13.begin();
-  //buttonC14.begin();
+  buttonC14.begin();
   delay(3000);
   LEDS.addLeds<LED_TYPE, LED_DT, GRB>(leds, NUM_LEDS);
   FastLED.setBrightness(MAX_BRIGHTNESS);
   FastLED.setMaxPowerInVoltsAndMilliamps(5, 8000);
-  //cylon();
+  cylon();
 }
 
 void loop() {
@@ -247,7 +250,7 @@ void getColor() {
           currentPalette = ForestColors_p;
           break;
         case 4:
-          currentPalette = RainbowColors_p;
+          currentPalette = rainbowC;
           break;
         case 5:
           currentPalette = mars;
@@ -270,9 +273,9 @@ void getColor() {
     if (buttonC13.pressed()) {
         whichPalette = 4;
       }
-    /*if (buttonC14.pressed()) {
+    if (buttonC14.pressed()) {
         whichPalette = 5;
-      }*/
+      }
 }
 
 void getMode() {
@@ -302,7 +305,7 @@ void getMode() {
       }
      switch (crMode) {
         case 0:
-          strobe();
+          strobeR();
           break;
         case 1:
           rainbow();
@@ -505,8 +508,7 @@ void ledShow() {
 }
 
 void strobeR() {
-  uint8_t strobe1;
-  EVERY_N_MILLISECONDS(500) {
+  EVERY_N_MILLISECONDS(1000) {
       strobe1 = spSmooth;
     }
   if ((millis() / strobe1) % 2) {
@@ -526,12 +528,11 @@ void strobe() {
   }
 
 void rainbow() {
-  uint8_t thisSpeed;
-  EVERY_N_MILLISECONDS(500) {
-      spSmooth = thisSpeed;
-    }
+    EVERY_N_SECONDS(1) {
+        rainbowSpeed = spSmooth;
+      }
     uint8_t deltaHue= 10;
-    uint8_t thisHue = beat8(thisSpeed, 50);
+    uint8_t thisHue = beat8(rainbowSpeed, 50);
     fill_rainbow(leds, NUM_LEDS, thisHue, deltaHue);
   }
 
@@ -555,8 +556,8 @@ void confetti()
   fadeToBlackBy( leds, NUM_LEDS, 10);
   int pos = random16(NUM_LEDS);
 //leds[pos] += CHSV( gHue + random8(64), 200, 255);
-  leds[pos] += CHSV(ColorFromPalette(currentPalette, smoothVal) , 200, 255);
-//leds[pos] += ColorFromPalette(currentPalette, gHue);
+//  leds[pos] += CHSV(ColorFromPalette(currentPalette, smoothVal) , 200, 255);
+  leds[pos] += ColorFromPalette(currentPalette, smoothVal);
 //leds[pos] += ColorFrompalette(currentPalette, gHue+random8(64), smoothVal);
 }
 
